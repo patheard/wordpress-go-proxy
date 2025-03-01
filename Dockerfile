@@ -5,7 +5,7 @@ WORKDIR /build
 COPY . .
 RUN go mod download
 
-RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -o wordpress-go-proxy ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -o wordpress-go-proxy ./cmd/server
 
 FROM scratch
 COPY --from=build /build/wordpress-go-proxy /wordpress-go-proxy
