@@ -1,13 +1,10 @@
 package models
 
 import (
-	"encoding/json"
-	"fmt"
 	"html/template"
-	"time"
+	"strings"
 )
 
-// WordPressPage represents the WordPress API response structure
 type WordPressPage struct {
 	ID       int    `json:"id"`
 	Slug     string `json:"slug"`
@@ -36,50 +33,62 @@ type WordPressMenuItem struct {
 	Url    string `json:"url"`
 }
 
-// PageData holds the data to be passed to our HTML template
 type PageData struct {
 	Lang     string
 	Modified string
-	Title    string
+	Title    template.HTML
 	Content  template.HTML
 	Excerpt  template.HTML
 	Path     string
-	Metadata map[string]string
+	Menu     *MenuData
 }
 
-// Breadcrumb represents a single item in a breadcrumb trail
-type Breadcrumb struct {
-	Label  string
-	URL    string
-	Active bool
+type MenuItemData struct {
+	ID       int
+	Title    string
+	Url      string
+	Children []*MenuItemData
 }
 
-// NewPageData creates a new PageData instance from a WordPress page
-func NewPageData(page *WordPressPage, path string) PageData {
-	// Format the modified date
-	formattedDate := page.Modified
-	if parsedDate, err := time.Parse("2006-01-02T15:04:05", page.Modified); err == nil {
-		formattedDate = parsedDate.Format("2006-01-02")
-	} else if parsedDate, err := time.Parse(time.RFC3339, page.Modified); err == nil {
-		formattedDate = parsedDate.Format("2006-01-02")
-	}
+type MenuData struct {
+	Items []*MenuItemData
+}
 
-	// Initialize metadata map
-	metadata := make(map[string]string)
-	metadata["page_id"] = fmt.Sprintf("%d", page.ID)
-
+func NewPageData(page *WordPressPage, menu *MenuData) PageData {
 	return PageData{
 		Lang:     page.Lang,
-		Modified: formattedDate,
-		Title:    page.Title.Rendered,
+		Modified: strings.Split(page.Modified, "T")[0],
+		Title:    template.HTML(page.Title.Rendered),
 		Content:  template.HTML(page.Content.Rendered),
 		Excerpt:  template.HTML(page.Excerpt.Rendered),
-		Path:     path,
-		Metadata: metadata,
+		Menu:     menu,
 	}
 }
 
-// ToJSON converts PageData to JSON
-func (pd *PageData) ToJSON() ([]byte, error) {
-	return json.Marshal(pd)
+func NewMenuData(menuItems *[]WordPressMenuItem, baseUrl string) *MenuData {
+	menuMap := make(map[int]*MenuItemData)
+	for _, item := range *menuItems {
+		menuMap[item.ID] = &MenuItemData{
+			ID:       item.ID,
+			Title:    item.Title.Rendered,
+			Url:      strings.Replace(item.Url, baseUrl, "", 1),
+			Children: make([]*MenuItemData, 0),
+		}
+	}
+
+	// Build up the menu tree of parent/child relationships
+	menuTree := make([]*MenuItemData, 0)
+	for _, item := range *menuItems {
+		if item.Parent != 0 {
+			if parent, ok := menuMap[item.Parent]; ok {
+				parent.Children = append(parent.Children, menuMap[item.ID])
+			}
+		} else {
+			menuTree = append(menuTree, menuMap[item.ID])
+		}
+	}
+
+	return &MenuData{
+		Items: menuTree,
+	}
 }

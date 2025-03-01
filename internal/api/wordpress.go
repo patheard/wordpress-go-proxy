@@ -15,37 +15,45 @@ import (
 type WordPressClient struct {
 	BaseURL       string
 	WordPressAuth string
+	Menus         map[string]*models.MenuData
 	MenuIdEn      string
 	MenuIdFr      string
 }
 
 type menuResult struct {
-	lang string
-	menu *[]models.WordPressMenuItem
-	err  error
+	lang      string
+	menuItems *[]models.WordPressMenuItem
+	err       error
 }
 
 func NewWordPressClient(baseURL string, username string, password string, menuIdEn string, menuIdFr string) *WordPressClient {
 	auth := base64.StdEncoding.EncodeToString([]byte(username + ":" + password))
-	client := &WordPressClient{BaseURL: baseURL, WordPressAuth: auth, MenuIdEn: menuIdEn, MenuIdFr: menuIdFr}
+	client := &WordPressClient{
+		BaseURL:       baseURL,
+		WordPressAuth: auth,
+		MenuIdEn:      menuIdEn,
+		MenuIdFr:      menuIdFr,
+		Menus:         make(map[string]*models.MenuData),
+	}
 
-	// Launch concurrent requests for both languages
+	// Launch concurrent requests to retrieve the menus
 	languages := []string{"en", "fr"}
 	results := make(chan menuResult, len(languages))
 	for _, lang := range languages {
 		go func(language string) {
-			menu, err := client.FetchMenu(language)
-			results <- menuResult{lang: language, menu: menu, err: err}
+			menuItems, err := client.FetchMenu(language)
+			results <- menuResult{lang: language, menuItems: menuItems, err: err}
 		}(lang)
 	}
 
 	// Wait for both results
-	for i := 0; i < len(languages); i++ {
+	for range languages {
 		result := <-results
 		if result.err != nil {
 			log.Fatalf("Error fetching menu items for %s: %v", result.lang, result.err)
 		}
-		log.Printf("Fetched %d menu items for %s", len(*result.menu), result.lang)
+		log.Printf("Fetched %d menu items for %s", len(*result.menuItems), result.lang)
+		client.Menus[result.lang] = models.NewMenuData(result.menuItems, baseURL)
 	}
 
 	return client
@@ -57,7 +65,7 @@ func (c *WordPressClient) FetchMenu(lang string) (*[]models.WordPressMenuItem, e
 		menuId = c.MenuIdFr
 	}
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/menu-items?menus=%s", c.BaseURL, menuId), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/wp-json/wp/v2/menu-items?menus=%s", c.BaseURL, menuId), nil)
 	req.Header.Add("Authorization", "Basic "+c.WordPressAuth)
 	if err != nil {
 		return nil, err
@@ -99,7 +107,7 @@ func (c *WordPressClient) FetchPage(path string) (*models.WordPressPage, error) 
 
 	// Make request to WordPress API
 	log.Printf("Fetching page with slug: %s", slug)
-	resp, err := http.Get(fmt.Sprintf("%s/pages?slug=%s", c.BaseURL, slug))
+	resp, err := http.Get(fmt.Sprintf("%s/wp-json/wp/v2/pages?slug=%s", c.BaseURL, slug))
 	if err != nil {
 		return nil, err
 	}

@@ -55,7 +55,7 @@ func (h *PageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // handlePage processes a page request
-func (h *PageHandler) handlePage(w http.ResponseWriter, r *http.Request, path string) {
+func (h *PageHandler) handlePage(w http.ResponseWriter, _ *http.Request, path string) {
 	wpPage, err := h.wpClient.FetchPage(path)
 	if err != nil {
 		http.Error(w, "Error fetching page content", http.StatusInternalServerError)
@@ -63,15 +63,14 @@ func (h *PageHandler) handlePage(w http.ResponseWriter, r *http.Request, path st
 		return
 	}
 
-	// Prepare data for template
-	data := models.PageData{
-		Lang:     wpPage.Lang,
-		Modified: strings.Split(wpPage.Modified, "T")[0],
-		Title:    wpPage.Title.Rendered,
-		Content:  template.HTML(wpPage.Content.Rendered),
+	wpMenu, ok := h.wpClient.Menus[wpPage.Lang]
+	if !ok {
+		log.Printf("Warning: No menu found for language %s defaulting to 'en'", wpPage.Lang)
+		wpMenu = h.wpClient.Menus["en"]
 	}
+	data := models.NewPageData(wpPage, wpMenu)
 
-	// Render template
+	log.Printf("Rendering page template")
 	err = h.templates.ExecuteTemplate(w, "layout.html", data)
 	if err != nil {
 		http.Error(w, "Error rendering template", http.StatusInternalServerError)
