@@ -21,29 +21,30 @@
 
   <!-- Custom styles -->
   <link rel="stylesheet" href="/static/css/styles.css">
-  <link rel="stylesheet" href="/static/css/articles.columns.min.css">
 </head>
 
 <body>
 
-  <gcds-header skip-to-href="#main-content">
+  <gcds-header {{if .LangSwapSlug}}lang-href="{{.LangSwapPath}}{{.LangSwapSlug}}"{{end}} skip-to-href="#main-content">
 
     <gcds-top-nav slot="menu" label="Main menu" alignment="right">
-      <gcds-nav-link href="/" slot="home">Superset Docs</gcds-nav-link>
+      <gcds-nav-link href="{{.Home}}" slot="home">{{.SiteName}}</gcds-nav-link>
+      {{$pageTitle := .Title}}
       {{range $i, $item := .Menu.Items}}
         {{if gt (len $item.Children) 0}}
-        <gcds-nav-group open-trigger="{{$item.Title}}">
+        <gcds-nav-group open-trigger="{{.Title}}">
           {{range $j, $child := $item.Children}}
-          <gcds-nav-link href="{{$child.Url}}">{{$child.Title}}</gcds-nav-link>
+          <gcds-nav-link href="{{.Url}}" {{if eq .Title $pageTitle}}current{{end}}>{{.Title}}</gcds-nav-link>
           {{end}}
         </gcds-nav-group>
         {{else}}
-        <gcds-nav-link href="{{$item.Url}}">{{$item.Title}}</gcds-nav-link>
+        <gcds-nav-link href="{{.Url}}" {{if eq .Title $pageTitle}}current{{end}}>{{.Title}}</gcds-nav-link>
         {{end}}
       {{end}}
     </gcds-top-nav>
 
     <gcds-breadcrumbs slot="breadcrumb">
+      <gcds-breadcrumbs-item href="{{.Home}}">{{.SiteName}}</gcds-breadcrumbs-item>
     </gcds-breadcrumbs>
 
   </gcds-header>

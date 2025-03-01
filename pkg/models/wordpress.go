@@ -2,12 +2,15 @@ package models
 
 import (
 	"html/template"
+	"log"
 	"strings"
 )
 
 type WordPressPage struct {
 	ID       int    `json:"id"`
 	Slug     string `json:"slug"`
+	SlugEn   string `json:"slug_en"`
+	SlugFr   string `json:"slug_fr"`
 	Lang     string `json:"lang"`
 	Modified string `json:"modified"`
 	Content  struct {
@@ -34,13 +37,17 @@ type WordPressMenuItem struct {
 }
 
 type PageData struct {
-	Lang     string
-	Modified string
-	Title    template.HTML
-	Content  template.HTML
-	Excerpt  template.HTML
-	Path     string
-	Menu     *MenuData
+	Lang         string
+	LangSwapPath string
+	LangSwapSlug string
+	Home         string
+	Modified     string
+	Title        template.HTML
+	Content      template.HTML
+	Excerpt      template.HTML
+	Path         string
+	SiteName     string
+	Menu         *MenuData
 }
 
 type MenuItemData struct {
@@ -54,14 +61,33 @@ type MenuData struct {
 	Items []*MenuItemData
 }
 
-func NewPageData(page *WordPressPage, menu *MenuData) PageData {
+func NewPageData(siteNames map[string]string, page *WordPressPage, menu *MenuData) PageData {
+	lang := page.Lang
+	if lang != "en" && lang != "fr" {
+		lang = "en"
+		log.Printf("Warning: Invalid language '%s', defaulting to 'en'", page.Lang)
+	}
+
+	langPaths := map[string]struct {
+		swap string
+		slug string
+		home string
+	}{
+		"en": {"/fr/", page.SlugFr, "/"},
+		"fr": {"/", page.SlugEn, "/fr/"},
+	}
+
 	return PageData{
-		Lang:     page.Lang,
-		Modified: strings.Split(page.Modified, "T")[0],
-		Title:    template.HTML(page.Title.Rendered),
-		Content:  template.HTML(page.Content.Rendered),
-		Excerpt:  template.HTML(page.Excerpt.Rendered),
-		Menu:     menu,
+		Lang:         lang,
+		LangSwapPath: langPaths[lang].swap,
+		LangSwapSlug: langPaths[lang].slug,
+		Home:         langPaths[lang].home,
+		Modified:     strings.Split(page.Modified, "T")[0],
+		Title:        template.HTML(page.Title.Rendered),
+		Content:      template.HTML(page.Content.Rendered),
+		Excerpt:      template.HTML(page.Excerpt.Rendered),
+		SiteName:     siteNames[lang],
+		Menu:         menu,
 	}
 }
 

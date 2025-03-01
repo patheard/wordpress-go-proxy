@@ -13,12 +13,13 @@ import (
 
 // PageHandler handles requests for WordPress pages
 type PageHandler struct {
-	wpClient  *api.WordPressClient
-	templates *template.Template
+	SiteNames       map[string]string
+	WordPressClient *api.WordPressClient
+	Templates       *template.Template
 }
 
 // NewPageHandler creates a new page handler with the given WordPress base URL
-func NewPageHandler(wordpressBaseURL string, wordpressUsername string, wordpressPassword string, wordpressMenuIdEn string, wordpressMeuIdFr string) *PageHandler {
+func NewPageHandler(siteNames map[string]string, wordPressClient *api.WordPressClient) *PageHandler {
 	// Load templates
 	tmpl, err := template.ParseFiles("templates/layout.html")
 	if err != nil {
@@ -26,8 +27,9 @@ func NewPageHandler(wordpressBaseURL string, wordpressUsername string, wordpress
 	}
 
 	return &PageHandler{
-		wpClient:  api.NewWordPressClient(wordpressBaseURL, wordpressUsername, wordpressPassword, wordpressMenuIdEn, wordpressMeuIdFr),
-		templates: tmpl,
+		SiteNames:       siteNames,
+		WordPressClient: wordPressClient,
+		Templates:       tmpl,
 	}
 }
 
@@ -38,16 +40,11 @@ func (h *PageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Check if path has the correct format
 	segments := strings.Split(strings.Trim(path, "/"), "/")
-	if path == "/" || len(segments) == 0 {
-		path = "home" // Default to home page
-	} else {
-		// Check that the last segment doesn't have a file extension
-		lastSegment := segments[len(segments)-1]
-		if ext := filepath.Ext(lastSegment); ext != "" {
-			log.Printf("Invalid path: Last segment contains file extension: %s", path)
-			http.NotFound(w, r)
-			return
-		}
+	lastSegment := segments[len(segments)-1]
+	if ext := filepath.Ext(lastSegment); ext != "" {
+		log.Printf("Invalid path: Last segment contains file extension: %s", path)
+		http.NotFound(w, r)
+		return
 	}
 
 	// Handle the page request
@@ -56,25 +53,26 @@ func (h *PageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // handlePage processes a page request
 func (h *PageHandler) handlePage(w http.ResponseWriter, _ *http.Request, path string) {
-	wpPage, err := h.wpClient.FetchPage(path)
+	page, err := h.WordPressClient.FetchPage(path)
 	if err != nil {
 		http.Error(w, "Error fetching page content", http.StatusInternalServerError)
 		log.Printf("Error fetching page: %v", err)
 		return
 	}
 
-	wpMenu, ok := h.wpClient.Menus[wpPage.Lang]
+	menu, ok := h.WordPressClient.Menus[page.Lang]
 	if !ok {
-		log.Printf("Warning: No menu found for language %s defaulting to 'en'", wpPage.Lang)
-		wpMenu = h.wpClient.Menus["en"]
+		log.Printf("Warning: No menu found for language %s defaulting to 'en'", page.Lang)
+		menu = h.WordPressClient.Menus["en"]
 	}
-	data := models.NewPageData(wpPage, wpMenu)
+	data := models.NewPageData(h.SiteNames, page, menu)
 
 	log.Printf("Rendering page template")
-	err = h.templates.ExecuteTemplate(w, "layout.html", data)
+	err = h.Templates.ExecuteTemplate(w, "layout.html", data)
 	if err != nil {
 		http.Error(w, "Error rendering template", http.StatusInternalServerError)
 		log.Printf("Error rendering template: %v", err)
 		return
 	}
+	log.Printf("Rendering page template complete")
 }

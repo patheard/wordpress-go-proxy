@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"wordpress-go-proxy/pkg/models"
 )
@@ -46,7 +47,7 @@ func NewWordPressClient(baseURL string, username string, password string, menuId
 		}(lang)
 	}
 
-	// Wait for both results
+	// Wait for both requests to complete
 	for range languages {
 		result := <-results
 		if result.err != nil {
@@ -72,7 +73,9 @@ func (c *WordPressClient) FetchMenu(lang string) (*[]models.WordPressMenuItem, e
 	}
 
 	// Execute the request
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 3 * time.Second,
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -104,10 +107,31 @@ func (c *WordPressClient) FetchPage(path string) (*models.WordPressPage, error) 
 	// Get the last segment of the path
 	path = strings.TrimSuffix(path, "/")
 	slug := path[strings.LastIndex(path, "/")+1:]
+	segments := strings.Split(path, "/")
 
-	// Make request to WordPress API
-	log.Printf("Fetching page with slug: %s", slug)
-	resp, err := http.Get(fmt.Sprintf("%s/wp-json/wp/v2/pages?slug=%s", c.BaseURL, slug))
+	lang := "en"
+	if len(segments) > 1 && segments[1] == "fr" {
+		lang = "fr"
+	}
+
+	homePages := map[string]string{
+		"":   "home",
+		"fr": "home-fr",
+	}
+	if homeSlug, isHome := homePages[slug]; isHome {
+		slug = homeSlug
+	}
+
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/wp-json/wp/v2/pages?slug=%s&lang=%s", c.BaseURL, slug, lang), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Printf("Fetching page: %s", req.URL.String())
+	client := &http.Client{
+		Timeout: 3 * time.Second,
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}

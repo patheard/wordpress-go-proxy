@@ -7,15 +7,17 @@ import (
 
 // Config holds all application configuration
 type Config struct {
+	// Server settings
+	Port       string
+	SiteNameEn string
+	SiteNameFr string
+
 	// WordPress API settings
 	WordPressBaseURL  string
 	WordPressUsername string
 	WordPressPassword string
 	WordPressMenuIdEn string
 	WordPressMenuIdFr string
-
-	// Server settings
-	Port string
 }
 
 // Load reads configuration from environment variables and sets defaults
@@ -24,6 +26,8 @@ func Load() (*Config, error) {
 
 	requiredVars := map[string]*string{
 		"PORT":                 &cfg.Port,
+		"SITE_NAME_EN":         &cfg.SiteNameEn,
+		"SITE_NAME_FR":         &cfg.SiteNameFr,
 		"WORDPRESS_URL":        &cfg.WordPressBaseURL,
 		"WORDPRESS_USERNAME":   &cfg.WordPressUsername,
 		"WORDPRESS_PASSWORD":   &cfg.WordPressPassword,
