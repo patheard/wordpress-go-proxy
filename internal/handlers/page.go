@@ -65,7 +65,8 @@ func (h *PageHandler) handlePage(w http.ResponseWriter, _ *http.Request, path st
 		log.Printf("Warning: No menu found for language %s defaulting to 'en'", page.Lang)
 		menu = h.WordPressClient.Menus["en"]
 	}
-	data := models.NewPageData(h.SiteNames, page, menu)
+
+	data := models.NewPageData(page, menu, h.SiteNames, h.WordPressClient.BaseURL)
 
 	log.Printf("Rendering page template")
 	err = h.Templates.ExecuteTemplate(w, "layout.html", data)

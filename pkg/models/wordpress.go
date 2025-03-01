@@ -61,7 +61,7 @@ type MenuData struct {
 	Items []*MenuItemData
 }
 
-func NewPageData(siteNames map[string]string, page *WordPressPage, menu *MenuData) PageData {
+func NewPageData(page *WordPressPage, menu *MenuData, siteNames map[string]string, baseUrl string) PageData {
 	lang := page.Lang
 	if lang != "en" && lang != "fr" {
 		lang = "en"
@@ -84,7 +84,7 @@ func NewPageData(siteNames map[string]string, page *WordPressPage, menu *MenuDat
 		Home:         langPaths[lang].home,
 		Modified:     strings.Split(page.Modified, "T")[0],
 		Title:        template.HTML(page.Title.Rendered),
-		Content:      template.HTML(page.Content.Rendered),
+		Content:      template.HTML(strings.ReplaceAll(page.Content.Rendered, baseUrl, "")),
 		Excerpt:      template.HTML(page.Excerpt.Rendered),
 		SiteName:     siteNames[lang],
 		Menu:         menu,

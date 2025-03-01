@@ -4,14 +4,13 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
-
 	"wordpress-go-proxy/internal/api"
 	"wordpress-go-proxy/internal/config"
 	"wordpress-go-proxy/internal/handlers"
 	"wordpress-go-proxy/internal/middleware"
 
+	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
 	_ "golang.org/x/crypto/x509roots/fallback"
 )
 
