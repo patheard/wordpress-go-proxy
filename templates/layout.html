@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html dir="ltr" lang="{{.Lang}}">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{{.Title}}</title>
+
+    <!-- GC Design System -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.design-system.alpha.canada.ca/@cdssnc/gcds-utility@1.5.0/dist/gcds-utility.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.design-system.alpha.canada.ca/@cdssnc/gcds-components@0.31.0/dist/gcds/gcds.css"
+    />
+    <script
+      type="module"
+      src="https://cdn.design-system.alpha.canada.ca/@cdssnc/gcds-components@0.31.0/dist/gcds/gcds.esm.js"
+    ></script>
+    <script
+      nomodule
+      src="https://cdn.design-system.alpha.canada.ca/@cdssnc/gcds-components@0.31.0/dist/gcds/gcds.js"
+    ></script>
+
+    <!-- Custom styles -->
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="/static/css/articles.columns.min.css">
+  </head>
+
+  <body>
+
+    <gcds-header skip-to-href="#main-content">
+    
+        <gcds-top-nav slot="menu" label="Main menu" alignment="right">
+            <gcds-nav-link href="/" slot="home">Superset Docs</gcds-nav-link>
+        </gcds-top-nav>
+    
+        <gcds-breadcrumbs slot="breadcrumb">
+        </gcds-breadcrumbs>
+    
+    </gcds-header>
+
+    <gcds-container id="main-content" main-container size="xl" centered tag="main">
+
+        <gcds-heading tag="h1">{{.Title}}</gcds-heading>
+        {{.Content}}
+        <gcds-date-modified>{{.Modified}}</gcds-date-modified>
+
+    </gcds-container>
+
+    <gcds-footer display="full"></gcds-footer>
+
+  </body>
+</html>

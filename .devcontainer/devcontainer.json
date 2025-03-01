@@ -1,0 +1,19 @@
+{
+	"name": "wordpress-go-proxy",
+	"image": "mcr.microsoft.com/devcontainers/base:bullseye",
+	"containerEnv": {
+		"SHELL": "/bin/zsh"
+	},
+	"features": {
+		"ghcr.io/devcontainers/features/go:1": {}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"github.copilot",
+				"github.vscode-github-actions",
+			]
+		}
+	},
+	"remoteUser": "vscode"
+}

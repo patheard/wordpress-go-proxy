@@ -1,0 +1,26 @@
+gcds-container :is(h2, h3, h4, h5, h6) {
+    margin-block-start: var(--gcds-spacing-600);
+    margin-block-end: var(--gcds-spacing-300);
+}
+
+gcds-container :is(ol, ul, p, hr) {
+    margin-block-start: var(--gcds-spacing-0);
+    margin-block-end: var(--gcds-spacing-300);
+}
+
+gcds-container :is(ol, ul) {
+    padding-inline-start: var(--gcds-spacing-300);
+}
+
+gcds-container :is(ol li) {
+    list-style: decimal;
+}
+
+gcds-container :is(ul li) {
+    list-style: disc;
+}
+
+gcds-details p {
+    margin-block-start: var(--gcds-spacing-100);
+    margin-block-end: var(--gcds-spacing-100);
+}
