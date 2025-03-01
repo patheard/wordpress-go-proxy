@@ -1,0 +1,131 @@
+package api
+
+import (
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"strings"
+
+	"wordpress-go-proxy/pkg/models"
+)
+
+type WordPressClient struct {
+	BaseURL       string
+	WordPressAuth string
+	MenuIdEn      string
+	MenuIdFr      string
+}
+
+type menuResult struct {
+	lang string
+	menu *[]models.WordPressMenuItem
+	err  error
+}
+
+func NewWordPressClient(baseURL string, username string, password string, menuIdEn string, menuIdFr string) *WordPressClient {
+	auth := base64.StdEncoding.EncodeToString([]byte(username + ":" + password))
+	client := &WordPressClient{BaseURL: baseURL, WordPressAuth: auth, MenuIdEn: menuIdEn, MenuIdFr: menuIdFr}
+
+	// Launch concurrent requests for both languages
+	languages := []string{"en", "fr"}
+	results := make(chan menuResult, len(languages))
+	for _, lang := range languages {
+		go func(language string) {
+			menu, err := client.FetchMenu(language)
+			results <- menuResult{lang: language, menu: menu, err: err}
+		}(lang)
+	}
+
+	// Wait for both results
+	for i := 0; i < len(languages); i++ {
+		result := <-results
+		if result.err != nil {
+			log.Fatalf("Error fetching menu items for %s: %v", result.lang, result.err)
+		}
+		log.Printf("Fetched %d menu items for %s", len(*result.menu), result.lang)
+	}
+
+	return client
+}
+
+func (c *WordPressClient) FetchMenu(lang string) (*[]models.WordPressMenuItem, error) {
+	menuId := c.MenuIdEn
+	if lang == "fr" {
+		menuId = c.MenuIdFr
+	}
+
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/menu-items?menus=%s", c.BaseURL, menuId), nil)
+	req.Header.Add("Authorization", "Basic "+c.WordPressAuth)
+	if err != nil {
+		return nil, err
+	}
+
+	// Execute the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("WordPress API returned status: %d, body: %s", resp.StatusCode, string(body))
+	}
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse JSON response
+	var menuItems []models.WordPressMenuItem
+	err = json.Unmarshal(body, &menuItems)
+	if err != nil {
+		return nil, err
+	}
+
+	return &menuItems, nil
+}
+
+func (c *WordPressClient) FetchPage(path string) (*models.WordPressPage, error) {
+	// Get the last segment of the path
+	path = strings.TrimSuffix(path, "/")
+	slug := path[strings.LastIndex(path, "/")+1:]
+
+	// Make request to WordPress API
+	log.Printf("Fetching page with slug: %s", slug)
+	resp, err := http.Get(fmt.Sprintf("%s/pages?slug=%s", c.BaseURL, slug))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("WordPress API returned status: %d, body: %s", resp.StatusCode, string(body))
+	}
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse JSON response
+	var pages []models.WordPressPage
+	err = json.Unmarshal(body, &pages)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(pages) == 0 {
+		return nil, fmt.Errorf("page not found")
+	}
+
+	return &pages[0], nil
+}
