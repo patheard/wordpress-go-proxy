@@ -5,8 +5,9 @@ Proxy function that retrieves and renders WordPress content using the [GC Design
 This sets up a simple AWS Lambda function with a function URL.
 
 ```sh
-# Build the Lambda function's docker image
-docker build -t wordpress-go-proxy .
+# Build the Lambda function's docker image.  The terraform expects it to
+# be ARM64, but this can be updated by adjusting the function's `architectures`.
+docker build --tag wordpress-go-proxy --platform linux/arm64 .
 
 cd terraform
 terraform init
