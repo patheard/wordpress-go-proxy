@@ -2,7 +2,8 @@
 .gitignore
 .golangci.yml
 .env
+*_test.go
 Dockerfile
 LICENSE
 README.md
-*_test.go
+terraform
