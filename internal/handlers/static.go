@@ -36,8 +36,7 @@ func (h *StaticHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Set cache control headers for static assets
-	w.Header().Set("Cache-Control", "public, max-age=86400") // 24 hours
+	w.Header().Set("Cache-Control", "public, max-age=604800") // 7 days
 
-	// Let the file server handle the request
 	h.fileServer.ServeHTTP(w, r)
 }

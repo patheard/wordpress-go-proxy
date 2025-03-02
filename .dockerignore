@@ -1,4 +1,6 @@
 .git
 .gitignore
+.golangci.yml
 .env
 Dockerfile
+*_test.go

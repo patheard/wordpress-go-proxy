@@ -15,18 +15,21 @@ import (
 )
 
 func main() {
-	// Initialize config
+
+	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatal("Error loading config: ", err)
 	}
 
+	// Create WordPress client.  This will fetch menus asynchronously.
 	wordPressClient := api.NewWordPressClient(
 		cfg.WordPressBaseURL,
 		cfg.WordPressUsername,
 		cfg.WordPressPassword,
 		cfg.WordPressMenuIdEn,
 		cfg.WordPressMenuIdFr)
+
 	siteNames := map[string]string{
 		"en": cfg.SiteNameEn,
 		"fr": cfg.SiteNameFr,
@@ -36,9 +39,6 @@ func main() {
 	http.Handle("/static/", http.StripPrefix("/static/", handlers.NewStaticHandler("static")))
 	http.Handle("/", middleware.SecurityHeaders(handlers.NewPageHandler(siteNames, wordPressClient)))
 
+	// Start Lambda proxy handler
 	lambda.Start(httpadapter.NewV2(http.DefaultServeMux).ProxyWithContext)
-
-	// Start server
-	// fmt.Printf("Server starting on port %s...\n", cfg.Port)
-	// log.Fatal(http.ListenAndServe(":"+cfg.Port, nil))
 }

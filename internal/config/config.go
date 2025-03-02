@@ -25,7 +25,6 @@ func Load() (*Config, error) {
 	cfg := &Config{}
 
 	requiredVars := map[string]*string{
-		"PORT":                 &cfg.Port,
 		"SITE_NAME_EN":         &cfg.SiteNameEn,
 		"SITE_NAME_FR":         &cfg.SiteNameFr,
 		"WORDPRESS_URL":        &cfg.WordPressBaseURL,
@@ -49,6 +48,12 @@ func Load() (*Config, error) {
 	// Return error if any required variables are missing
 	if len(missingVars) > 0 {
 		return nil, fmt.Errorf("missing required environment variables: %v", missingVars)
+	}
+
+	// Set optional variables
+	cfg.Port = os.Getenv("PORT")
+	if cfg.Port == "" {
+		cfg.Port = "5000"
 	}
 
 	return cfg, nil

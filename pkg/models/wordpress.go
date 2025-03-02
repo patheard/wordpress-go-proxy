@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// WordPressPage represents a WordPress page JSON response.
 type WordPressPage struct {
 	ID       int    `json:"id"`
 	Slug     string `json:"slug"`
@@ -27,6 +28,7 @@ type WordPressPage struct {
 	Categories    []int `json:"categories,omitempty"`
 }
 
+// WordPressMenuItem represents a WordPress menu item JSON response.
 type WordPressMenuItem struct {
 	ID    int `json:"id"`
 	Title struct {
@@ -36,20 +38,21 @@ type WordPressMenuItem struct {
 	Url    string `json:"url"`
 }
 
+// PageData holds the data needed to render a page.
 type PageData struct {
-	Lang         string
-	LangSwapPath string
-	LangSwapSlug string
-	Home         string
-	Modified     string
-	Title        template.HTML
-	Content      template.HTML
-	Excerpt      template.HTML
-	Path         string
-	SiteName     string
-	Menu         *MenuData
+	Lang           string
+	LangSwapPath   string
+	LangSwapSlug   string
+	Home           string
+	Modified       string
+	Title          template.HTML
+	Content        template.HTML
+	ShowBreadcrumb bool
+	SiteName       string
+	Menu           *MenuData
 }
 
+// MenuItemData holds the data needed to render a menu item.
 type MenuItemData struct {
 	ID       int
 	Title    string
@@ -57,10 +60,12 @@ type MenuItemData struct {
 	Children []*MenuItemData
 }
 
+// MenuData holds the data needed to render a menu.
 type MenuData struct {
 	Items []*MenuItemData
 }
 
+// NewPageData creates a new PageData object that can then be used to render a page.
 func NewPageData(page *WordPressPage, menu *MenuData, siteNames map[string]string, baseUrl string) PageData {
 	lang := page.Lang
 	if lang != "en" && lang != "fr" {
@@ -78,19 +83,22 @@ func NewPageData(page *WordPressPage, menu *MenuData, siteNames map[string]strin
 	}
 
 	return PageData{
-		Lang:         lang,
-		LangSwapPath: langPaths[lang].swap,
-		LangSwapSlug: langPaths[lang].slug,
-		Home:         langPaths[lang].home,
-		Modified:     strings.Split(page.Modified, "T")[0],
-		Title:        template.HTML(page.Title.Rendered),
-		Content:      template.HTML(strings.ReplaceAll(page.Content.Rendered, baseUrl, "")),
-		Excerpt:      template.HTML(page.Excerpt.Rendered),
-		SiteName:     siteNames[lang],
-		Menu:         menu,
+		Lang:           lang,
+		LangSwapPath:   langPaths[lang].swap,
+		LangSwapSlug:   langPaths[lang].slug,
+		Home:           langPaths[lang].home,
+		Modified:       strings.Split(page.Modified, "T")[0],
+		Title:          template.HTML(page.Title.Rendered),
+		Content:        template.HTML(strings.ReplaceAll(page.Content.Rendered, baseUrl, "")),
+		ShowBreadcrumb: !strings.Contains(page.Slug, "home"),
+		SiteName:       siteNames[lang],
+		Menu:           menu,
 	}
 }
 
+// NewMenuData creates a new MenuData object that can then be used to render a menu.
+// The menu items are expected to be in a flat list with parent/child relationships
+// represented by the Parent field.
 func NewMenuData(menuItems *[]WordPressMenuItem, baseUrl string) *MenuData {
 	menuMap := make(map[int]*MenuItemData)
 	for _, item := range *menuItems {

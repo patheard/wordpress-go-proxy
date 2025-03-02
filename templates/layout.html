@@ -44,17 +44,17 @@
     </gcds-top-nav>
 
     <gcds-breadcrumbs slot="breadcrumb">
+      {{if .ShowBreadcrumb}}
       <gcds-breadcrumbs-item href="{{.Home}}">{{.SiteName}}</gcds-breadcrumbs-item>
+      {{end}}
     </gcds-breadcrumbs>
 
   </gcds-header>
 
   <gcds-container id="main-content" main-container size="xl" centered tag="main">
-
     <gcds-heading tag="h1">{{.Title}}</gcds-heading>
     {{.Content}}
     <gcds-date-modified>{{.Modified}}</gcds-date-modified>
-
   </gcds-container>
 
   <gcds-footer display="full"></gcds-footer>
